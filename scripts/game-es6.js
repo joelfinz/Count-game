@@ -5,9 +5,13 @@ class NumberedBox extends createjs.Container {
         super();
 
         this.game = game;
+        this.number = number;
 
         var movieclip = new lib.NumberedBox();
         movieclip.numberText.text = number;
+
+        new createjs.ButtonHelper(movieclip, 0, 1, 2, false, new lib.NumberedBox(), 3);
+
         this.addChild(movieclip);
 
         this.setBounds(0,0,50,50);
@@ -21,6 +25,24 @@ class NumberedBox extends createjs.Container {
     }
 }
 
+class GameData {
+    constructor() {
+        this.amountOfBox = 3;
+        this.resetData();
+    }
+    resetData() {
+        this.currentNumber = 1;
+    }
+    nextNumber() {
+        this.currentNumber +=1;
+    }
+    isRightNumber(number) {
+        return (number === this.currentNumber);
+    }
+    isGameWin() {
+        return (this.currentNumber > this.amountOfBox);
+    }
+}
 
 class Game {
     constructor() {
@@ -32,10 +54,20 @@ class Game {
         this.stage.width = this.canvas.width;
         this.stage.height = this.canvas.height;
 
+        //enable mouseover
+        this.stage.enableMouseOver();
+
         //enable touch
         createjs.Touch.enable(this.stage);
 
+        //enable retina screen
+        this.retinalize();
+
         createjs.Ticker.setFPS(60);
+
+        //game related initialisation
+        this.gameData = new GameData();
+
 
         //keep redrawing the stage.
         createjs.Ticker.on("tick", this.stage);
@@ -43,7 +75,7 @@ class Game {
         //background
         this.stage.addChild(new lib.Background());
 
-        this.generateMultipleBoxes();
+        this.generateMultipleBoxes(this.gameData.amountOfBox);
     }
 
     version() {
@@ -62,9 +94,37 @@ class Game {
         }
     }
     handleClick(numberedBox) {
-        this.stage.removeChild(numberedBox);
+        if(this.gameData.isRightNumber(numberedBox.number)){
+            this.stage.removeChild(numberedBox);
+            this.gameData.nextNumber();
+
+            //is game over??
+            if (this.gameData.isGameWin()) {
+                var gameOverView = new lib.GameOverView();
+                this.stage.addChild(gameOverView);
+            }
+        }
+        
     }
     
+    retinalize() {
+        this.stage.width = this.canvas.width;
+        this.stage.height = this.canvas.height;
+
+        let ratio = window.devicePixelRatio;
+        if (ratio === undefined) {
+            return;
+        }
+
+        this.canvas.setAttribute('width', Math.round(this.stage.width * ratio));
+        this.canvas.setAttribute('height', Math.round(this.stage.height * ratio));
+
+        this.stage.scaleX = this.stage.scaleY = ratio;
+
+        //set css style
+        this.canvas.style.width = this.stage.width + "px";
+        this.canvas.style.width = this.stage.height + "px";
+    }
 }
 //start the game
 var game = new Game();
